@@ -142,4 +142,3 @@ def test_leaderboard():
         f"{ENDPOINT}/users/delete/user", json=payload_deleting_user_2
     )
     assert delete_user_2.status_code == HTTPStatus.OK
-    os.remove("C:/flask_project/app/static/users_leaderboard.png")
