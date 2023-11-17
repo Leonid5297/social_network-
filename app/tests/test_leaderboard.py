@@ -1,6 +1,5 @@
 import requests
 from http import HTTPStatus
-import os
 
 ENDPOINT = "http://10.114.7.146:5000"
 
