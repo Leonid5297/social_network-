@@ -80,13 +80,13 @@ class User(ObjectSocialNetwork, UserArchive):
         self.email = email
         self.__password = password
         self.comments_of_other_users = (
-            comments_of_other_users  # other people's reaction to certain user posts
+            comments_of_other_users  # other people's reaction to certain user post
         )
         self.reactions_of_other_users = reactions_of_other_users
-        self.posts = posts  # dict of Post-objects
-        self.history_user_reactions = []
+        self.posts = posts  # dict of Post-objects this user 
+        self.history_user_reactions = []  # reactions the user on other users (list of reaction_id)
         self.history_user_comments = []
-        super()._entry(self)
+        super()._entry(self)  # adding to the UserArchive
 
     def get_info(self):
         return {
@@ -207,7 +207,7 @@ class Post(ObjectSocialNetwork, PostArchive):
         self.dictionary_reactions = {"heart": 0, "like": 0, "dislike": 0, "boom": 0}
         self.comments = comments
         self.history_reactions = {}
-        super()._entry(self)
+        super()._entry(self)  # adding to the PostArhcive
 
     def get_info(self):
         return {
@@ -231,7 +231,7 @@ class Post(ObjectSocialNetwork, PostArchive):
         del author_post.posts[self.post_id]
         del comments
         del reactions
-        del self  # deleting post-object
+        del self 
 
     def count_reactions_and_comments(self):
         return len(self.comments) + len(self.reactions)
@@ -247,7 +247,7 @@ class Comment(ObjectSocialNetwork, CommentArchive):
         self.author_comment_id = author_comment_id
         self.commentator_name = commentator_name
         self.date = date
-        super()._entry(self)
+        super()._entry(self)  # adding to the CommentArchive
 
     def get_info(self):
         return {
@@ -258,7 +258,7 @@ class Comment(ObjectSocialNetwork, CommentArchive):
             "text": self.text,
             "date": self.date,
         }
-
+ 
     def delete(self, post, author_post, flag=False):
         if not (post is None):
             del post.comments[self.comment_id]
@@ -281,7 +281,7 @@ class Reaction(ObjectSocialNetwork, ReactionArchive):
         self.author_reaction_id = author_reaction_id
         self.reaction = reaction
         self.date = date
-        super()._entry(self)
+        super()._entry(self)  # adding to the ReactionArchive
 
     def get_info(self):
         return {
@@ -304,7 +304,7 @@ class Reaction(ObjectSocialNetwork, ReactionArchive):
         author_reaction = Search.get_user_by_reaction_id(self.reaction_id)
         author_reaction.history_user_reactions.remove(self.reaction_id)
         del ReactionArchive.REACTIONS[self.reaction_id]
-        del self  # deleting Reaction-object
+        del self  
 
     @staticmethod
     def is_repetition_reaction(user, post):
@@ -316,13 +316,14 @@ class Reaction(ObjectSocialNetwork, ReactionArchive):
 
 
 class Search:  # Search objects in Archives by object-id
+    """Search objects in Archives by social object-id"""
     @staticmethod
     def get_user_by_id(user_id):
         try:
             user = UserArchive.USERS[user_id]
         except KeyError:
             return None
-        return user  # certain  User object
+        return user  
 
     @staticmethod
     def get_user_by_post_id(post_id):
@@ -331,7 +332,7 @@ class Search:  # Search objects in Archives by object-id
             user = UserArchive.USERS[post.author_id]
         except KeyError:
             return None
-        return user  # certain  User object
+        return user  # author of the post (user-object)
 
     @staticmethod
     def get_post_by_post_id(post_id):
@@ -366,16 +367,16 @@ class Search:  # Search objects in Archives by object-id
             user = UserArchive.USERS[comment.author_comment_id]
         except KeyError:
             return None
-        return user
+        return user  # author of the comment (user-object)
 
     @staticmethod
-    def get_user_by_reaction_id(reaction_id):
+    def get_user_by_reaction_id(reaction_id): 
         try:
             reaction = ReactionArchive.REACTIONS[reaction_id]
             user = UserArchive.USERS[reaction.author_reaction_id]
         except KeyError:
             return None
-        return user
+        return user  # author of the reaction (user-object)
 
     @staticmethod
     def get_reaction_by_reaction_id(reaction_id):
