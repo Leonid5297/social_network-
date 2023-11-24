@@ -35,7 +35,7 @@ def test_create_post():
     assert "reactions" in response
     assert "comments" in response
     assert (
-        str(response["post_id"]) in requests.get(f"{ENDPOINT}/posts/all").json()
+            str(response["post_id"]) in requests.get(f"{ENDPOINT}/posts/all").json()
     )  # presence in the archive
 
     # the transmitted payload_post with a non-existent author_id (user):
@@ -141,8 +141,8 @@ def test_create_review():
     )
     assert result_review.status_code == HTTPStatus.CREATED
     assert (
-        result_review.text
-        == "Reaction is incorrect format.\nComment left successfully."
+            result_review.text
+            == "Reaction is incorrect format.\nComment left successfully."
     )
     comment_id = 0  # comment_id of the first created comment is 0
     assert str(comment_id) in requests.get(f"{ENDPOINT}/posts/comments/all").json()
@@ -280,12 +280,12 @@ def test_get_posts_sort():
     response = result_sort.json()
     assert "posts" in response
     assert (
-        len(response["posts"][0]["reactions"]) + len(response["posts"][0]["comments"])
-        == 2
+            len(response["posts"][0]["reactions"]) + len(response["posts"][0]["comments"])
+            == 2
     )
     assert (
-        len(response["posts"][1]["reactions"]) + len(response["posts"][1]["comments"])
-        == 4
+            len(response["posts"][1]["reactions"]) + len(response["posts"][1]["comments"])
+            == 4
     )
 
     # test - corrected data has been transmitted (desc):
@@ -297,15 +297,15 @@ def test_get_posts_sort():
     response = result_sort.json()
     assert "posts" in response
     assert (
-        len(response["posts"][0]["reactions"]) + len(response["posts"][0]["comments"])
-        == 4
+            len(response["posts"][0]["reactions"]) + len(response["posts"][0]["comments"])
+            == 4
     )
     assert (
-        len(response["posts"][1]["reactions"]) + len(response["posts"][1]["comments"])
-        == 2
+            len(response["posts"][1]["reactions"]) + len(response["posts"][1]["comments"])
+            == 2
     )
 
-    # todo: delete two created users
+    # deleting two created users
     payload_deleting_user_1 = {
         "user_id": result_user_1.json()["user_id"],
         "password_author": "L5on5don@1",
@@ -319,6 +319,137 @@ def test_get_posts_sort():
         "user_id": result_user_2.json()["user_id"],
         "password_author": "Lnt32kfa@",
     }
+    delete_user_2 = requests.delete(
+        f"{ENDPOINT}/users/delete/user", json=payload_deleting_user_2
+    )
+    assert delete_user_2.status_code == HTTPStatus.OK
+
+
+def test_delete_post():
+    # creating the user_1 and the user_2
+    result_user_1 = requests.post(f"{ENDPOINT}/users/create", json=payload_user_1)
+    assert result_user_1.status_code == HTTPStatus.CREATED
+    result_user_2 = requests.post(f"{ENDPOINT}/users/create", json=payload_user_2)
+    assert result_user_2.status_code == HTTPStatus.CREATED
+
+    # creating the post of user_1
+    payload_post = {
+        "author_id": result_user_1.json()["user_id"],
+        "text": "string",
+    }
+    result_post = requests.post(
+        f"{ENDPOINT}/posts/create", json=payload_post
+    )
+    assert result_post.status_code == HTTPStatus.CREATED
+    # creating reaction and  comment of user_2 on post of user_1:
+    payload_review = {
+        "author_id": result_user_2.json()["user_id"],  # user_2 - author of the reaction
+        "reaction": "like",
+        "comment": "cool!",
+    }
+    result_review = requests.post(
+        f"{ENDPOINT}/posts/{result_post.json()['post_id']}/review", json=payload_review
+    )
+    assert result_review.status_code == HTTPStatus.CREATED
+
+    # Test - deleting of post:
+    payload_deleting_post = {
+        "password_author": "L5on5don@1",
+        "post_id": result_post.json()["post_id"],
+        "author_id": result_user_1.json()["user_id"],
+    }
+    result_deleting_post = requests.delete(
+        f"{ENDPOINT}/users/delete/post", json=payload_deleting_post
+    )
+    assert result_deleting_post.status_code == HTTPStatus.OK
+    assert (
+            str(result_post.json()["post_id"])
+            not in requests.get(f"{ENDPOINT}/posts/all").json()
+    )
+    assert (
+            "0" not in requests.get(f"{ENDPOINT}/posts/comments/all").json()
+    )  # reactions of this post  must be missing from the ReactionArchive
+    assert (
+            "0" not in requests.get(f"{ENDPOINT}/posts/reactions/all").json()
+    )  # comment of this post must be missing from the CommentArchive
+
+    # deleting of users:
+    assert result_review.status_code == HTTPStatus.CREATED
+    payload_deleting_user_1 = {
+        "user_id": result_user_1.json()["user_id"],
+        "password_author": "L5on5don@1",
+    }  # for user_1
+    result_deleting_user_1 = requests.delete(
+        f"{ENDPOINT}/users/delete/user", json=payload_deleting_user_1
+    )
+    assert result_deleting_user_1.status_code == HTTPStatus.OK
+
+    payload_deleting_user_2 = {
+        "user_id": result_user_2.json()["user_id"],
+        "password_author": "Lnt32kfa@",
+    }  # for user_2
+    delete_user_2 = requests.delete(
+        f"{ENDPOINT}/users/delete/user", json=payload_deleting_user_2
+    )
+    assert delete_user_2.status_code == HTTPStatus.OK
+
+
+def test_delete_review():
+    result_user_1 = requests.post(f"{ENDPOINT}/users/create", json=payload_user_1)
+    assert result_user_1.status_code == HTTPStatus.CREATED
+    result_user_2 = requests.post(f"{ENDPOINT}/users/create", json=payload_user_2)
+    assert result_user_2.status_code == HTTPStatus.CREATED
+    # create post of user_1
+    payload_post = {
+        "author_id": result_user_1.json()["user_id"],
+        "text": "string",
+    }
+    result_post = requests.post(
+        f"{ENDPOINT}/posts/create", json=payload_post
+    )  # create post (user_1)
+    assert result_post.status_code == HTTPStatus.CREATED
+
+    # creating of the reaction and the comment of user_2 on post of user_1:
+    payload_review = {
+        "author_id": result_user_2.json()["user_id"],  # user_2 - author of the reaction
+        "reaction": "like",
+        "comment": "cool!",
+    }
+    result_review = requests.post(
+        f"{ENDPOINT}/posts/{result_post.json()['post_id']}/review", json=payload_review
+    )
+    assert result_review.status_code == HTTPStatus.CREATED
+    assert "0" in requests.get(f"{ENDPOINT}/posts/comments/all").json()
+    assert "0" in requests.get(f"{ENDPOINT}/posts/reactions/all").json()
+
+    # Test - deleting reaction and comment:
+    payload_deleting_reaction = {"password_author": "Lnt32kfa@", "reaction_id": 0}
+    payload_deleting_comment = {"password_author": "Lnt32kfa@", "comment_id": 0}
+    result_deleting_reaction = requests.delete(
+        f"{ENDPOINT}/users/delete/reaction", json=payload_deleting_reaction
+    )
+    result_deleting_comment = requests.delete(
+        f"{ENDPOINT}/users/delete/comment", json=payload_deleting_comment
+    )
+    assert result_deleting_comment.status_code == HTTPStatus.OK
+    assert result_deleting_reaction.status_code == HTTPStatus.OK
+    assert "0" not in requests.get(f"{ENDPOINT}/posts/comments/all").json()
+    assert "0" not in requests.get(f"{ENDPOINT}/posts/reactions/all").json()
+
+    # deleting of users:
+    payload_deleting_user_1 = {
+        "user_id": result_user_1.json()["user_id"],
+        "password_author": "L5on5don@1",
+    }  # for user_1
+    result_deleting_user_1 = requests.delete(
+        f"{ENDPOINT}/users/delete/user", json=payload_deleting_user_1
+    )
+    assert result_deleting_user_1.status_code == HTTPStatus.OK
+
+    payload_deleting_user_2 = {
+        "user_id": result_user_2.json()["user_id"],
+        "password_author": "Lnt32kfa@",
+    }  # for user_2
     delete_user_2 = requests.delete(
         f"{ENDPOINT}/users/delete/user", json=payload_deleting_user_2
     )

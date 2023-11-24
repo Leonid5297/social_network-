@@ -58,10 +58,28 @@ def create_user():
 @app.get("/users/<int:user_id>")  # need test
 def get_data_user(user_id):
     user = models.Search.get_user_by_id(user_id)
-    if user is None:
-        return Response(status=HTTPStatus.NOT_FOUND)
+    if not isinstance(user, models.User):
+        return user
     return Response(
         json.dumps(user.get_info()), HTTPStatus.OK, mimetype="application/json"
     )
 
 
+@app.delete("/users/delete/user")
+def delete_user():
+    data = request.get_json()
+    try:
+        user_id = int(data["user_id"])  # a string is allowed if it consists of digits
+        password = data["password_author"]
+    except KeyError:
+        return Response(status=HTTPStatus.BAD_REQUEST)
+    except ValueError:
+        return Response(status=HTTPStatus.BAD_REQUEST)
+
+    user = models.Search.get_user_by_id(user_id)
+    if not isinstance(user, models.User):
+        return user
+    if password != user.password:
+        return Response(status=HTTPStatus.BAD_REQUEST)
+    user.delete()
+    return Response(status=HTTPStatus.OK)

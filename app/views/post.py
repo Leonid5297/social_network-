@@ -6,7 +6,7 @@ from datetime import datetime
 import collections
 
 
-@app.post("/posts/create")  # need test
+@app.post("/posts/create")
 def create_post():
     data = request.get_json()
     try:
@@ -18,8 +18,8 @@ def create_post():
         return Response(status=HTTPStatus.BAD_REQUEST)
 
     user = models.Search.get_user_by_id(author_id)
-    if user is None:
-        return Response(status=HTTPStatus.NOT_FOUND)
+    if not isinstance(user, models.User):
+        return user
 
     if len(models.PostArchive.POSTS) == 0:
         post_id = 0
@@ -40,17 +40,16 @@ def create_post():
     return response
 
 
-@app.get("/posts/<int:post_id>")  # need test
+@app.get("/posts/<int:post_id>")
 def get_data_post(post_id):
-    data = models.Search.get_post_by_post_id(post_id)
-    if data is None:
-        return Response(status=HTTPStatus.NOT_FOUND)
-    data = data.get_info()
-    response = Response(json.dumps(data), HTTPStatus.OK, mimetype="application/json")
-    return response
+    post = models.Search.get_post_by_post_id(post_id)
+    if not isinstance(post, models.Post):
+        return post
+    data = post.get_info()
+    return Response(json.dumps(data), HTTPStatus.OK, mimetype="application/json")
 
 
-@app.post("/posts/<int:post_id>/review")  #
+@app.post("/posts/<int:post_id>/review")
 def create_review(post_id):
     data = request.get_json()
     text = ""
@@ -80,12 +79,12 @@ def create_review(post_id):
 
     # search in UserArchive commentator (User object):
     commentator_user = models.Search.get_user_by_id(author_id)
-    if commentator_user is None:
-        return Response(status=HTTPStatus.NOT_FOUND)
+    if not isinstance(commentator_user, models.User):
+        return commentator_user
     # search in PostArchive the Post object:
     post = models.Search.get_post_by_post_id(post_id)
-    if post is None:
-        return Response(status=HTTPStatus.NOT_FOUND)
+    if not isinstance(post, models.Post):
+        return post
 
     if flag_reaction is True:
         if models.Reaction.is_repetition_reaction(commentator_user, post):  # it  exists repetition reaction
@@ -152,7 +151,7 @@ def create_review(post_id):
     return Response(text, status=HTTPStatus.CREATED, mimetype="text/html")
 
 
-@app.get("/users/<int:user_id>/posts")  # need test
+@app.get("/users/<int:user_id>/posts")
 def get_posts_sort(user_id):
     data = request.get_json()
     try:
@@ -161,7 +160,7 @@ def get_posts_sort(user_id):
         return Response(status=HTTPStatus.BAD_REQUEST)
     if sort == "asc" or sort == "desc":
         user = models.Search.get_user_by_id(user_id)
-        if not (user is None):
+        if isinstance(user, models.User):
             user_posts = user.posts
             user_posts_new = []
             for obj in user_posts:  # for in  post id of user posts
@@ -182,8 +181,97 @@ def get_posts_sort(user_id):
 
             return dict_posts_sort, 200, {"content-type": "application/json"}
         else:
-            return Response(status=HTTPStatus.NOT_FOUND)
+            return user
     else:
         return Response(status=HTTPStatus.BAD_REQUEST)
 
 
+@app.delete("/users/delete/post")
+def delete_post():
+    data = request.get_json()
+    try:
+        user_id = int(data["author_id"])  # a string is allowed if it consists of digits
+        password = data["password_author"]
+        post_id = int(data["post_id"])
+
+    except KeyError:
+        return Response(status=HTTPStatus.BAD_REQUEST)
+    except ValueError:
+        return Response(status=HTTPStatus.BAD_REQUEST)
+
+    user = models.Search.get_user_by_id(user_id)
+    if not isinstance(user, models.User):
+        return user
+    if password != user.password:
+        return Response(status=HTTPStatus.BAD_REQUEST)
+    try:
+        post = user.posts[post_id]
+    except KeyError:
+        return Response(status=HTTPStatus.BAD_REQUEST)
+
+    post.delete(user)
+    return Response(status=HTTPStatus.OK)
+
+
+@app.delete("/users/delete/reaction")
+def delete_reaction():
+    data = request.get_json()
+    try:
+        reaction_id = int(
+            data["reaction_id"]
+        )  # a string is allowed if it consists of digits
+        password = data["password_author"]
+    except KeyError:
+        return Response(status=HTTPStatus.BAD_REQUEST)
+    except ValueError:
+        return Response(status=HTTPStatus.BAD_REQUEST)
+
+    reaction = models.Search.get_reaction_by_reaction_id(reaction_id)
+    if not isinstance(reaction, models.Reaction):
+        return reaction
+
+    author_reaction = models.Search.get_user_by_reaction_id(reaction_id)
+    if not isinstance(author_reaction, models.User):
+        return author_reaction
+    if password != author_reaction.password:
+        return Response(status=HTTPStatus.BAD_REQUEST)
+
+    post = models.Search.get_post_by_reaction_id(reaction_id)
+    author_post = models.Search.get_user_by_post_id(post.post_id)  # User-object
+
+    if not isinstance(author_post, models.User):
+        return author_post
+    reaction.delete(post, author_post)
+    return Response(status=HTTPStatus.OK)
+
+
+@app.delete("/users/delete/comment")
+def delete_comment():
+    data = request.get_json()
+    try:
+        comment_id = int(
+            data["comment_id"]
+        )
+        password = data["password_author"]
+    except KeyError:
+        return Response(status=HTTPStatus.BAD_REQUEST)
+    except ValueError:
+        return Response(status=HTTPStatus.BAD_REQUEST)
+
+    comment = models.Search.get_comment_by_comment_id(comment_id)
+    if not isinstance(comment, models.Comment):
+        return comment
+
+    author_comment = models.Search.get_user_by_comment_id(comment_id)
+    if not isinstance(author_comment, models.User):
+        return author_comment
+    if password != author_comment.password:
+        return Response(status=HTTPStatus.BAD_REQUEST)
+
+    post = models.Search.get_post_by_comment_id(comment_id)
+    author_post = models.Search.get_user_by_post_id(post.post_id)
+
+    if not isinstance(post,models.Post):
+        return post
+    comment.delete(post, author_post)
+    return Response(status=HTTPStatus.OK)

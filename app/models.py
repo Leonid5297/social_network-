@@ -1,8 +1,8 @@
 import re
 import copy
 from abc import ABC, abstractmethod
-
-
+from flask import Response
+from http import HTTPStatus
 class ValidationError(Exception):
     """Raises when password (or email) is not valid."""
 
@@ -322,7 +322,7 @@ class Search:  # Search objects in Archives by object-id
         try:
             user = UserArchive.USERS[user_id]
         except KeyError:
-            return None
+            return Response(status=HTTPStatus.NOT_FOUND)
         return user  
 
     @staticmethod
@@ -331,7 +331,7 @@ class Search:  # Search objects in Archives by object-id
             post = PostArchive.POSTS[post_id]
             user = UserArchive.USERS[post.author_id]
         except KeyError:
-            return None
+            return Response(status=HTTPStatus.NOT_FOUND)
         return user  # author of the post (user-object)
 
     @staticmethod
@@ -339,7 +339,7 @@ class Search:  # Search objects in Archives by object-id
         try:
             post = PostArchive.POSTS[post_id]
         except KeyError:
-            return None
+            return Response(status=HTTPStatus.NOT_FOUND)
         return post
 
     @staticmethod
@@ -348,7 +348,7 @@ class Search:  # Search objects in Archives by object-id
             comment = CommentArchive.COMMENTS[comment_id]
             post = PostArchive.POSTS[comment.post_id]
         except KeyError:
-            return None
+            return Response(status=HTTPStatus.NOT_FOUND)
         return post
 
     @staticmethod
@@ -357,7 +357,7 @@ class Search:  # Search objects in Archives by object-id
             reaction = ReactionArchive.REACTIONS[reaction_id]
             post = PostArchive.POSTS[reaction.post_id]
         except KeyError:
-            return None
+            return Response(status=HTTPStatus.NOT_FOUND)
         return post
 
     @staticmethod
@@ -366,7 +366,7 @@ class Search:  # Search objects in Archives by object-id
             comment = CommentArchive.COMMENTS[comment_id]
             user = UserArchive.USERS[comment.author_comment_id]
         except KeyError:
-            return None
+            return Response(status=HTTPStatus.NOT_FOUND)
         return user  # author of the comment (user-object)
 
     @staticmethod
@@ -375,7 +375,7 @@ class Search:  # Search objects in Archives by object-id
             reaction = ReactionArchive.REACTIONS[reaction_id]
             user = UserArchive.USERS[reaction.author_reaction_id]
         except KeyError:
-            return None
+            return Response(status=HTTPStatus.NOT_FOUND)
         return user  # author of the reaction (user-object)
 
     @staticmethod
@@ -383,7 +383,7 @@ class Search:  # Search objects in Archives by object-id
         try:
             reaction = ReactionArchive.REACTIONS[reaction_id]
         except KeyError:
-            return None
+            return Response(status=HTTPStatus.NOT_FOUND)
         return reaction
 
     @staticmethod
@@ -391,6 +391,6 @@ class Search:  # Search objects in Archives by object-id
         try:
             comment = CommentArchive.COMMENTS[comment_id]
         except KeyError:
-            return None
+            return Response(status=HTTPStatus.NOT_FOUND)
         return comment
 
